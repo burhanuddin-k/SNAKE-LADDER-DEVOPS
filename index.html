@@ -1,86 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Snake & Ladder Pro</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snakes &amp; Ladders</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-royal">
-    <div class="animated-bg"></div>
+<body>
 
-    <div id="screen-loading" class="screen glass-panel active">
-        <h1>Loading...</h1>
-        <div class="spinner"></div>
-    </div>
+  <div class="table-felt">
+    <header class="game-header">
+      <h1><span class="title-snake">Snakes</span> <span class="amp">&amp;</span> <span class="title-ladder">Ladders</span></h1>
+      <p class="subtitle">Climb the ladders. Dodge the fangs. First to 100 wins.</p>
+    </header>
 
-    <div id="screen-home" class="screen glass-panel hidden">
-        <h1 class="game-title">Snake & Ladder<br><span>PRO</span></h1>
-        <div class="menu-buttons">
-            <button class="btn primary" onclick="navTo('screen-game')">Play Now</button>
-            <button class="btn" onclick="navTo('screen-leaderboard')">Leaderboard</button>
-            <button class="btn" onclick="navTo('screen-settings')">Settings</button>
-            <button class="btn" onclick="navTo('screen-about')">About</button>
+    <main class="game-layout">
+
+      <!-- BOARD -->
+      <div class="board-wrapper">
+        <div class="board" id="board">
+          <!-- 100 cells injected by script.js -->
+          <svg id="board-svg" class="board-svg" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="woodRail" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#a9712f"/>
+                <stop offset="50%" stop-color="#e0a85e"/>
+                <stop offset="100%" stop-color="#8a5a23"/>
+              </linearGradient>
+
+              <linearGradient id="snakeGradA" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#3fae4f"/>
+                <stop offset="100%" stop-color="#1f6e2c"/>
+              </linearGradient>
+              <linearGradient id="snakeGradB" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ff5d5d"/>
+                <stop offset="100%" stop-color="#b3122a"/>
+              </linearGradient>
+              <linearGradient id="snakeGradC" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#6fc7ff"/>
+                <stop offset="100%" stop-color="#1c5fa3"/>
+              </linearGradient>
+
+              <pattern id="scalePattern" patternUnits="userSpaceOnUse" width="1.4" height="1.4" patternTransform="rotate(0)">
+                <circle cx="0.7" cy="0.7" r="0.55" fill="rgba(255,255,255,0.18)"/>
+              </pattern>
+
+              <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/>
+              </filter>
+            </defs>
+            <g id="ladders-layer"></g>
+            <g id="snakes-layer"></g>
+          </svg>
+          <div id="tokens-layer" class="tokens-layer"></div>
         </div>
+      </div>
+
+      <!-- SIDE PANEL -->
+      <aside class="side-panel">
+
+        <section class="setup-card" id="setup-card">
+          <h2>Players</h2>
+          <div class="player-count-select" id="player-count-select">
+            <button class="count-btn" data-count="2">2</button>
+            <button class="count-btn" data-count="3">3</button>
+            <button class="count-btn" data-count="4">4</button>
+          </div>
+          <div class="player-config" id="player-config"></div>
+          <button class="start-btn" id="start-btn">Start Game</button>
+        </section>
+
+        <section class="players-card" id="players-card" hidden>
+          <h2>Players</h2>
+          <ul class="player-list" id="player-list"></ul>
+        </section>
+
+        <section class="dice-card" id="dice-card" hidden>
+          <div class="dice-stage">
+            <div class="dice" id="dice">
+              <div class="dice-face" id="dice-face">
+                <span class="pip p1"></span><span class="pip p2"></span>
+                <span class="pip p3"></span><span class="pip p4"></span>
+                <span class="pip p5"></span><span class="pip p6"></span>
+              </div>
+            </div>
+          </div>
+          <button class="roll-btn" id="roll-btn">Roll Dice</button>
+          <p class="turn-msg" id="turn-msg">&nbsp;</p>
+        </section>
+
+      </aside>
+    </main>
+  </div>
+
+  <!-- WIN OVERLAY -->
+  <div class="win-overlay" id="win-overlay" hidden>
+    <div class="win-card">
+      <h2 id="win-text">Winner!</h2>
+      <button class="start-btn" id="play-again-btn">Play Again</button>
     </div>
+  </div>
 
-    <div id="screen-game" class="screen glass-panel hidden">
-        <div class="game-header">
-            <button class="btn-icon" onclick="confirmExit()">🔙</button>
-            <div id="turn-indicator">Player 1's Turn</div>
-            <button class="btn-icon" onclick="pauseGame()">⏸️</button>
-        </div>
-        
-        <div class="board-container">
-            <div id="board"></div>
-            <div id="player-1" class="token p1"></div>
-            <div id="player-2" class="token p2 hidden"></div>
-        </div>
-
-        <div class="dice-container">
-            <div id="dice" class="dice" onclick="rollDice()">🎲</div>
-            <p id="dice-result">Tap to Roll</p>
-        </div>
-    </div>
-
-    <div id="screen-settings" class="screen glass-panel hidden">
-        <h2>Settings</h2>
-        <div class="settings-group">
-            <label>Sound Effects <input type="checkbox" id="toggle-sound" checked></label>
-            <label>Background Music <input type="checkbox" id="toggle-music" checked></label>
-            <label>Theme: 
-                <select id="theme-select" onchange="changeTheme()">
-                    <option value="theme-royal">Royal</option>
-                    <option value="theme-jungle">Jungle</option>
-                    <option value="theme-dark">Dark Mode</option>
-                </select>
-            </label>
-        </div>
-        <button class="btn" onclick="navTo('screen-home')">Back</button>
-    </div>
-
-    <div id="screen-leaderboard" class="screen glass-panel hidden">
-        <h2>Leaderboard</h2>
-        <ul id="leaderboard-list"></ul>
-        <button class="btn" onclick="resetLeaderboard()">Reset</button>
-        <button class="btn" onclick="navTo('screen-home')">Back</button>
-    </div>
-
-    <div id="screen-about" class="screen glass-panel hidden">
-        <h2>About</h2>
-        <p><strong>Snake & Ladder Pro</strong></p>
-        <p>Version 1.0</p>
-        <p>Developed with HTML, CSS, JS</p>
-        <button class="btn" onclick="navTo('screen-home')">Back</button>
-    </div>
-
-    <div id="screen-win" class="screen glass-panel hidden">
-        <div class="confetti">🎉🎊🎉</div>
-        <h2 id="winner-text">Player Wins!</h2>
-        <button class="btn primary" onclick="navTo('screen-game')">Play Again</button>
-        <button class="btn" onclick="navTo('screen-home')">Home</button>
-    </div>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
