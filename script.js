@@ -1,117 +1,262 @@
-const board = document.getElementById("board");
-let gameMode = 'vs-computer';
-let playerPositions = [1, 1]; // [Player 1, Player 2/Computer]
-let currentPlayer = 0; // 0 = P1, 1 = P2/Computer
-let isGameOver = false;
+// Game Configuration and State
+const BOARD_SIZE = 10;
+const TOTAL_CELLS = 100;
+let players = [{ id: 'p1', pos: 0 }, { id: 'p2', pos: 0 }];
+let turn = 0; // 0 for p1, 1 for p2
+let isAnimating = false;
 
-// Snakes and Ladders Maps (Key: Start, Value: End)
-const snakes = { 99: 5, 91: 60, 87: 36, 63: 18, 48: 9, 31: 4 };
-const ladders = { 3: 39, 12: 45, 29: 72, 41: 83, 67: 92, 79: 98 };
+// Snakes and Ladders mapping (Start: End)
+const snakes = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
+const ladders = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
 
-// Initialize Grid Boards dynamically
-function createBoard() {
+// Initialize App (Updated with Safety Checks)
+document.addEventListener("DOMContentLoaded", () => {
+    try {
+        generateBoard();
+        loadSettings();
+    } catch (error) {
+        console.error("Initialization error:", error);
+    } finally {
+        // This ensures the loading screen ALWAYS disappears, even if an error occurs
+        setTimeout(() => navTo('screen-home'), 1000); 
+    }
+});
+
+// Navigation System
+function navTo(screenId) {
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('hidden');
+    });
+    document.getElementById(screenId).classList.remove('hidden');
+    document.getElementById(screenId).classList.add('active');
+
+    if (screenId === 'screen-game') startGame();
+    if (screenId === 'screen-leaderboard') loadLeaderboard();
+}
+
+// Generate 10x10 Zig-Zag Board
+function generateBoard() {
+    const board = document.getElementById('board');
     board.innerHTML = '';
-    // Build from 100 down to 1 row by row
-    for (let r = 9; r >= 0; r--) {
+    let cells = [];
+    
+    for (let row = 9; row >= 0; row--) {
         let rowCells = [];
-        for (let c = 0; c < 10; c++) {
-            let id = (r % 2 === 0) ? (r * 10 + c + 1) : (r * 10 + (9 - c) + 1);
-            rowCells.push(id);
+        for (let col = 1; col <= 10; col++) {
+            rowCells.push(row * 10 + col);
         }
-        rowCells.forEach(id => {
-            const cell = document.createElement("div");
-            cell.className = "cell";
-            cell.id = `cell-${id}`;
-            cell.innerHTML = `<span style="opacity:0.3">${id}</span>`;
-            
-            if(snakes[id]) cell.classList.add("snake-start");
-            if(ladders[id]) cell.classList.add("ladder-start");
-            
-            board.appendChild(cell);
-        });
+        // Alternate rows for zig-zag
+        if (row % 2 !== 0) rowCells.reverse(); 
+        cells = cells.concat(rowCells);
     }
-    updateTokens();
-}
 
-function setMode(mode) {
-    gameMode = mode;
-    document.getElementById("setup-zone").classList.add("hidden");
-    document.getElementById("game-zone").classList.remove("hidden");
-    resetGame();
-}
-
-function updateTokens() {
-    document.querySelectorAll(".token").forEach(t => t.remove());
-    
-    // Draw Player 1
-    if(playerPositions[0] > 0) {
-        const cell1 = document.getElementById(`cell-${playerPositions[0]}`);
-        if(cell1) cell1.innerHTML += `<div class="token p1"></div>`;
-    }
-    // Draw Player 2/Computer
-    if(playerPositions[1] > 0) {
-        const cell2 = document.getElementById(`cell-${playerPositions[1]}`);
-        if(cell2) cell2.innerHTML += `<div class="token p2"></div>`;
-    }
-}
-
-function playTurn() {
-    if (isGameOver) return;
-    
-    document.getElementById("roll-btn").disabled = true;
-    let roll = Math.floor(Math.random() * 6) + 1;
-    document.getElementById("dice").innerText = roll;
-    
-    movePlayer(currentPlayer, roll);
-}
-
-function movePlayer(player, spaces) {
-    let oldPos = playerPositions[player];
-    let newPos = oldPos + spaces;
-    
-    if (newPos <= 100) {
-        playerPositions[player] = newPos;
+    cells.forEach(num => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.id = `cell-${num}`;
+        cell.innerText = num;
         
-        // Check for Snakes or Ladders
-        if (snakes[newPos]) {
-            playerPositions[player] = snakes[newPos];
-        } else if (ladders[newPos]) {
-            playerPositions[player] = ladders[newPos];
-        }
-    }
+        // Visual indicator for snakes and ladders (Placeholder for images)
+        if (snakes[num]) cell.innerText += ' 🐍';
+        if (ladders[num]) cell.innerText += ' 🪜';
+        
+        board.appendChild(cell);
+    });
+}
+
+// Core Game Logic
+function startGame() {
+    players = [{ id: 'p1', pos: 0 }, { id: 'p2', pos: 0 }];
+    turn = 0;
+    isAnimating = false;
+    document.getElementById('player-2').classList.remove('hidden'); // Enable 2P
+    updateTurnUI();
+    moveToken(0, 0); // Reset p1
+    moveToken(1, 0); // Reset p2
+    document.getElementById('dice-result').innerText = "Tap to Roll";
+}
+
+function rollDice() {
+    if (isAnimating) return;
+    isAnimating = true;
     
-    updateTokens();
-    
-    if (playerPositions[player] === 100) {
-        document.getElementById("status-text").innerText = `🎉 Player ${player + 1} Wins!`;
-        isGameOver = true;
+    const diceEl = document.getElementById('dice');
+    const resultEl = document.getElementById('dice-result');
+    diceEl.classList.add('rolling');
+    playSound('roll');
+
+    setTimeout(() => {
+        diceEl.classList.remove('rolling');
+        const roll = Math.floor(Math.random() * 6) + 1;
+        
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        diceEl.innerText = diceFaces[roll - 1];
+        resultEl.innerText = `Rolled a ${roll}`;
+
+        handleMovement(roll);
+    }, 600);
+}
+
+function handleMovement(roll) {
+    let currentPlayer = players[turn];
+    let newPos = currentPlayer.pos + roll;
+
+    if (newPos > TOTAL_CELLS) {
+        // Must land exactly on 100
+        endTurn();
         return;
     }
-    
-    // Switch turn
-    currentPlayer = currentPlayer === 0 ? 1 : 0;
-    let label = currentPlayer === 0 ? "Player 1's Turn" : (gameMode === 'vs-computer' ? "Computer is thinking..." : "Player 2's Turn");
-    document.getElementById("status-text").innerText = label;
 
-    // Trigger Computer Move if applicable
-    if (!isGameOver && gameMode === 'vs-computer' && currentPlayer === 1) {
+    currentPlayer.pos = newPos;
+    moveToken(turn, newPos);
+
+    setTimeout(() => {
+        // Check Snakes and Ladders
+        if (snakes[newPos]) {
+            playSound('slide');
+            currentPlayer.pos = snakes[newPos];
+            moveToken(turn, currentPlayer.pos);
+        } else if (ladders[newPos]) {
+            playSound('climb');
+            currentPlayer.pos = ladders[newPos];
+            moveToken(turn, currentPlayer.pos);
+        }
+
         setTimeout(() => {
-            let compRoll = Math.floor(Math.random() * 6) + 1;
-            document.getElementById("dice").innerText = compRoll;
-            movePlayer(1, compRoll);
-            document.getElementById("roll-btn").disabled = false;
-        }, 1200);
-    } else {
-        document.getElementById("roll-btn").disabled = false;
+            if (currentPlayer.pos === TOTAL_CELLS) {
+                handleWin();
+            } else {
+                endTurn();
+            }
+        }, 600); // Wait for snake/ladder animation
+    }, 600); // Wait for initial move animation
+}
+
+function endTurn() {
+    turn = turn === 0 ? 1 : 0;
+    updateTurnUI();
+    isAnimating = false;
+}
+
+function updateTurnUI() {
+    const pName = turn === 0 ? "Player 1" : "Player 2";
+    const pColor = turn === 0 ? "#3498db" : "#f1c40f";
+    const indicator = document.getElementById('turn-indicator');
+    indicator.innerText = `${pName}'s Turn`;
+    indicator.style.color = pColor;
+}
+
+// Convert board number to X/Y coordinates for smooth CSS transition
+function moveToken(playerIndex, cellNumber) {
+    if (cellNumber === 0) {
+        // Off-board starting position
+        const token = document.getElementById(playerIndex === 0 ? 'player-1' : 'player-2');
+        token.style.left = `-10%`;
+        token.style.top = `90%`;
+        return;
+    }
+
+    // Math to calculate CSS Grid position
+    let zeroBased = cellNumber - 1;
+    let row = Math.floor(zeroBased / 10);
+    let col = zeroBased % 10;
+    
+    // Zig-zag compensation
+    if (row % 2 !== 0) col = 9 - col;
+    
+    // Convert to percentage (10% per cell)
+    let cssX = col * 10;
+    let cssY = (9 - row) * 10; // 0,0 in CSS is top-left
+
+    const token = document.getElementById(playerIndex === 0 ? 'player-1' : 'player-2');
+    // Offset for center of cell (+1% for centering)
+    token.style.left = `${cssX + 1}%`;
+    token.style.top = `${cssY + 1}%`;
+}
+
+// Winning and Leaderboard Logic (Updated for Safety)
+function handleWin() {
+    const winnerName = turn === 0 ? "Player 1" : "Player 2";
+    document.getElementById('winner-text').innerText = `${winnerName} Wins!`;
+    saveWin(winnerName);
+    navTo('screen-win');
+}
+
+function saveWin(winner) {
+    try {
+        let scores = JSON.parse(localStorage.getItem('sl_scores')) || { 'Player 1': 0, 'Player 2': 0 };
+        scores[winner]++;
+        localStorage.setItem('sl_scores', JSON.stringify(scores));
+    } catch(e) {
+        console.warn("Could not save win due to storage restrictions.", e);
     }
 }
 
-function resetGame() {
-    playerPositions = [1, 1];
-    currentPlayer = 0;
-    isGameOver = false;
-    document.getElementById("dice").innerText = "-";
-    document.getElementById("status-text").innerText = "Player 1's Turn";
-    document.getElementById("roll-btn").disabled = false;
-    createBoard();
+function loadLeaderboard() {
+    const list = document.getElementById('leaderboard-list');
+    let scores = { 'Player 1': 0, 'Player 2': 0 }; 
+    try {
+        scores = JSON.parse(localStorage.getItem('sl_scores')) || scores;
+    } catch(e) {
+        console.warn("Could not load leaderboard due to storage restrictions.", e);
+    }
+    list.innerHTML = `
+        <li>Player 1: ${scores['Player 1']} Wins</li>
+        <li>Player 2: ${scores['Player 2']} Wins</li>
+    `;
+}
+
+function resetLeaderboard() {
+    try {
+        localStorage.removeItem('sl_scores');
+    } catch (e) {
+        console.warn("Could not reset leaderboard.", e);
+    }
+    loadLeaderboard();
+}
+
+// Utilities (Settings, Dialogs, Audio)
+function confirmExit() {
+    if (confirm("Are you sure you want to leave this game? Progress will be lost.")) {
+        navTo('screen-home');
+    }
+}
+
+function pauseGame() {
+    alert("Game Paused. Click OK to resume.");
+}
+
+function changeTheme() {
+    const theme = document.getElementById('theme-select').value;
+    document.body.className = theme;
+    try {
+        localStorage.setItem('sl_theme', theme);
+    } catch(e) {
+        console.warn("Could not save theme due to storage restrictions.", e);
+    }
+}
+
+// Updated for Safety
+function loadSettings() {
+    try {
+        const savedTheme = localStorage.getItem('sl_theme');
+        if (savedTheme) {
+            document.body.className = savedTheme;
+            document.getElementById('theme-select').value = savedTheme;
+        }
+    } catch (e) {
+        console.warn("LocalStorage access denied. Themes will not be saved, but you can still play.", e);
+    }
+}
+
+// Audio Placeholder Function
+function playSound(type) {
+    const isSoundOn = document.getElementById('toggle-sound').checked;
+    if (!isSoundOn) return;
+    
+    // To implement real sounds, add files to assets/sounds/ and uncomment:
+    // const audio = new Audio(`assets/sounds/${type}.mp3`);
+    // audio.play();
+    console.log(`[Audio] Playing ${type} sound`);
 }
