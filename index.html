@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Snake & Ladder Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>🐍 Snakes & Ladders 🪜</h1>
+        
+        <div class="setup-zone" id="setup-zone">
+            <h3>Select Game Mode</h3>
+            <button onclick="setMode('vs-computer')">👤 vs 🤖 Computer</button>
+            <button onclick="setMode('vs-player')">👤 vs 👤 2 Players</button>
+        </div>
+
+        <div class="main-layout hidden" id="game-zone">
+            <div class="board-container">
+                <div id="board"></div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="status" id="status-text">Player 1's Turn</div>
+                <div class="dice-section">
+                    <div id="dice" class="dice">-</div>
+                    <button id="roll-btn" onclick="playTurn()">Roll Dice</button>
+                </div>
+                <button class="reset-btn" onclick="resetGame()">Restart Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
