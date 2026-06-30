@@ -2,34 +2,83 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Snake & Ladder Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake & Ladder Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="game-container">
-        <h1>🐍 Snakes & Ladders 2🪜</h1>
+<body class="theme-royal">
+    <div class="animated-bg"></div>
+
+    <div id="screen-loading" class="screen glass-panel active">
+        <h1>Loading...</h1>
+        <div class="spinner"></div>
+    </div>
+
+    <div id="screen-home" class="screen glass-panel hidden">
+        <h1 class="game-title">Snake & Ladder<br><span>PRO</span></h1>
+        <div class="menu-buttons">
+            <button class="btn primary" onclick="navTo('screen-game')">Play Now</button>
+            <button class="btn" onclick="navTo('screen-leaderboard')">Leaderboard</button>
+            <button class="btn" onclick="navTo('screen-settings')">Settings</button>
+            <button class="btn" onclick="navTo('screen-about')">About</button>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen glass-panel hidden">
+        <div class="game-header">
+            <button class="btn-icon" onclick="confirmExit()">🔙</button>
+            <div id="turn-indicator">Player 1's Turn</div>
+            <button class="btn-icon" onclick="pauseGame()">⏸️</button>
+        </div>
         
-        <div class="setup-zone" id="setup-zone">
-            <h3>Select Game Mode</h3>
-            <button onclick="setMode('vs-computer')">👤 vs 🤖 Computer</button>
-            <button onclick="setMode('vs-player')">👤 vs 👤 2 Players</button>
+        <div class="board-container">
+            <div id="board"></div>
+            <div id="player-1" class="token p1"></div>
+            <div id="player-2" class="token p2 hidden"></div>
         </div>
 
-        <div class="main-layout hidden" id="game-zone">
-            <div class="board-container">
-                <div id="board"></div>
-            </div>
-            
-            <div class="control-panel">
-                <div class="status" id="status-text">Player 1's Turn</div>
-                <div class="dice-section">
-                    <div id="dice" class="dice">-</div>
-                    <button id="roll-btn" onclick="playTurn()">Roll Dice</button>
-                </div>
-                <button class="reset-btn" onclick="resetGame()">Restart Game</button>
-            </div>
+        <div class="dice-container">
+            <div id="dice" class="dice" onclick="rollDice()">🎲</div>
+            <p id="dice-result">Tap to Roll</p>
         </div>
+    </div>
+
+    <div id="screen-settings" class="screen glass-panel hidden">
+        <h2>Settings</h2>
+        <div class="settings-group">
+            <label>Sound Effects <input type="checkbox" id="toggle-sound" checked></label>
+            <label>Background Music <input type="checkbox" id="toggle-music" checked></label>
+            <label>Theme: 
+                <select id="theme-select" onchange="changeTheme()">
+                    <option value="theme-royal">Royal</option>
+                    <option value="theme-jungle">Jungle</option>
+                    <option value="theme-dark">Dark Mode</option>
+                </select>
+            </label>
+        </div>
+        <button class="btn" onclick="navTo('screen-home')">Back</button>
+    </div>
+
+    <div id="screen-leaderboard" class="screen glass-panel hidden">
+        <h2>Leaderboard</h2>
+        <ul id="leaderboard-list"></ul>
+        <button class="btn" onclick="resetLeaderboard()">Reset</button>
+        <button class="btn" onclick="navTo('screen-home')">Back</button>
+    </div>
+
+    <div id="screen-about" class="screen glass-panel hidden">
+        <h2>About</h2>
+        <p><strong>Snake & Ladder Pro</strong></p>
+        <p>Version 1.0</p>
+        <p>Developed with HTML, CSS, JS</p>
+        <button class="btn" onclick="navTo('screen-home')">Back</button>
+    </div>
+
+    <div id="screen-win" class="screen glass-panel hidden">
+        <div class="confetti">🎉🎊🎉</div>
+        <h2 id="winner-text">Player Wins!</h2>
+        <button class="btn primary" onclick="navTo('screen-game')">Play Again</button>
+        <button class="btn" onclick="navTo('screen-home')">Home</button>
     </div>
 
     <script src="script.js"></script>
